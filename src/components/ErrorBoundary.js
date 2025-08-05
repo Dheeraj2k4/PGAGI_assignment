@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Button } from 'react-native-paper';
 
 class ErrorBoundary extends React.Component {
@@ -80,14 +80,18 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     width: '100%',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.25)',
+    } : {
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    }),
   },
   title: {
     fontSize: 24,

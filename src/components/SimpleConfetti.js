@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Animated, Dimensions } from 'react-native';
+import { View, Animated, Dimensions, Platform } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -63,7 +63,11 @@ const SimpleConfetti = ({ trigger, onComplete }) => {
       right: 0,
       bottom: 0,
       zIndex: 1000,
-      pointerEvents: 'none',
+      ...(Platform.OS === 'web' ? {
+        pointerEvents: 'none',
+      } : {
+        pointerEvents: 'none',
+      }),
     }}>
       {confettiPieces.map((piece) => (
         <Animated.View

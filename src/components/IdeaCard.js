@@ -16,12 +16,12 @@ const IdeaCard = ({ idea, onUpvote, hasVoted, expanded, onToggleExpanded }) => {
       Animated.timing(scaleValue, {
         toValue: 0.95,
         duration: 100,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }),
       Animated.timing(scaleValue, {
         toValue: 1,
         duration: 100,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }),
     ]).start();
 

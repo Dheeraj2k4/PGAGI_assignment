@@ -106,8 +106,7 @@ const AppNavigator = () => {
         <PaperProvider theme={paperTheme}>
           <NavigationContainer theme={navigationTheme}>
             <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-          
-          <Tab.Navigator
+            <Tab.Navigator
           screenOptions={({ route }) => ({
             tabBarIcon: ({ focused, color, size }) => {
               let iconName;

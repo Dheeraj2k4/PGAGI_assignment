@@ -51,7 +51,7 @@ const LeaderboardScreen = ({ navigation }) => {
             toValue: 1,
             duration: 500,
             delay: index * 100,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
           }).start();
         });
       }, 100);
@@ -117,14 +117,20 @@ const LeaderboardScreen = ({ navigation }) => {
         marginVertical: 8,
         borderRadius: 16,
         overflow: 'hidden',
-        elevation: index < 3 ? 8 : 4,
-        shadowColor: '#000',
-        shadowOffset: {
-          width: 0,
-          height: index < 3 ? 4 : 2,
-        },
-        shadowOpacity: index < 3 ? 0.3 : 0.25,
-        shadowRadius: index < 3 ? 6 : 3.84,
+        ...(Platform.OS === 'web' ? {
+          boxShadow: index < 3 
+            ? '0px 4px 12px rgba(0, 0, 0, 0.3)' 
+            : '0px 2px 8px rgba(0, 0, 0, 0.25)',
+        } : {
+          elevation: index < 3 ? 8 : 4,
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: index < 3 ? 4 : 2,
+          },
+          shadowOpacity: index < 3 ? 0.3 : 0.25,
+          shadowRadius: index < 3 ? 6 : 3.84,
+        }),
       },
       gradient: {
         padding: 20,
@@ -260,14 +266,18 @@ const LeaderboardScreen = ({ navigation }) => {
       backgroundColor: theme.surface,
       borderBottomLeftRadius: 20,
       borderBottomRightRadius: 20,
-      elevation: 4,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
+      ...(Platform.OS === 'web' ? {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.25)',
+      } : {
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      }),
     },
     headerTop: {
       flexDirection: 'row',

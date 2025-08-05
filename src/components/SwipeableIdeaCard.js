@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { IconButton } from 'react-native-paper';
 import { useTheme } from '../context/ThemeContext';
@@ -19,7 +19,7 @@ const SwipeableIdeaCard = ({
 
   const onGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
-    { useNativeDriver: true }
+    { useNativeDriver: Platform.OS !== 'web' }
   );
 
   const onHandlerStateChange = (event) => {
@@ -30,14 +30,14 @@ const SwipeableIdeaCard = ({
         // Swipe right - Read More action
         Animated.spring(translateX, {
           toValue: 0,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== 'web',
         }).start();
         onReadMore(idea);
       } else {
         // Snap back
         Animated.spring(translateX, {
           toValue: 0,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== 'web',
         }).start();
       }
     }
