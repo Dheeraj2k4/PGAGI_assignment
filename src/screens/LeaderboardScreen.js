@@ -9,7 +9,9 @@ import {
   Animated,
   Dimensions,
   Platform,
+  SafeAreaView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card, Chip, ToggleButton, ActivityIndicator, IconButton } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -21,6 +23,28 @@ const { width } = Dimensions.get('window');
 
 const LeaderboardScreen = ({ navigation }) => {
   const { theme, isDarkMode, toggleTheme } = useTheme();
+  const insets = useSafeAreaInsets();
+  
+  // Detect if device has hardware navigation buttons
+  const { height: screenHeight } = Dimensions.get('screen');
+  const { height: windowHeight } = Dimensions.get('window');
+  const hasHardwareButtons = screenHeight - windowHeight > 0;
+  
+  // Calculate dynamic bottom padding
+  const getBottomPadding = () => {
+    if (Platform.OS === 'ios') {
+      return Math.max(insets.bottom + 20, 40);
+    } else {
+      if (hasHardwareButtons) {
+        return Math.max(insets.bottom + 80, 100);
+      } else {
+        return Math.max(insets.bottom + 20, 40);
+      }
+    }
+  };
+  
+  const dynamicBottomPadding = getBottomPadding();
+  
   const [ideas, setIdeas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -256,6 +280,10 @@ const LeaderboardScreen = ({ navigation }) => {
   );
 
   const leaderboardStyles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
     container: {
       flex: 1,
       backgroundColor: theme.background,
@@ -325,7 +353,7 @@ const LeaderboardScreen = ({ navigation }) => {
     },
     listContainer: {
       paddingVertical: 16,
-      paddingBottom: 100,
+      paddingBottom: dynamicBottomPadding, // Dynamic padding based on device
     },
     emptyContainer: {
       flex: 1,
@@ -392,7 +420,8 @@ const LeaderboardScreen = ({ navigation }) => {
   const avgRating = ideas.length > 0 ? Math.round(ideas.reduce((sum, idea) => sum + idea.rating, 0) / ideas.length) : 0;
 
   return (
-    <View style={leaderboardStyles.container}>
+    <SafeAreaView style={leaderboardStyles.safeArea}>
+      <View style={leaderboardStyles.container}>
       <View style={leaderboardStyles.header}>
         <View style={leaderboardStyles.headerTop}>
           <Text style={leaderboardStyles.headerTitle}>🏆 Leaderboard</Text>
@@ -465,6 +494,7 @@ const LeaderboardScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       />
     </View>
+    </SafeAreaView>
   );
 };
 

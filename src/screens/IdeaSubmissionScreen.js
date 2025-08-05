@@ -7,7 +7,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  SafeAreaView,
+  Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TextInput, Button, Card, HelperText, Menu, Chip } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../context/ThemeContext';
@@ -18,6 +21,32 @@ import SimpleConfetti from '../components/SimpleConfetti';
 
 const IdeaSubmissionScreen = ({ navigation }) => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  
+  // Detect if device has hardware navigation buttons
+  const { height: screenHeight } = Dimensions.get('screen');
+  const { height: windowHeight } = Dimensions.get('window');
+  const hasHardwareButtons = screenHeight - windowHeight > 0;
+  
+  // Calculate dynamic bottom padding based on device type
+  const getBottomPadding = () => {
+    if (Platform.OS === 'ios') {
+      // iPhone with home indicator gets normal safe area
+      return Math.max(insets.bottom, 20);
+    } else {
+      // Android: check if has hardware buttons
+      if (hasHardwareButtons) {
+        // Has hardware navigation buttons - need extra padding
+        return Math.max(insets.bottom + 60, 80);
+      } else {
+        // Gesture navigation (like newer Android) - normal padding
+        return Math.max(insets.bottom, 30);
+      }
+    }
+  };
+  
+  const dynamicBottomPadding = getBottomPadding();
+  
   const [formData, setFormData] = useState({
     startupName: '',
     tagline: '',
@@ -151,6 +180,10 @@ const IdeaSubmissionScreen = ({ navigation }) => {
   };
 
   const styles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
     container: {
       flex: 1,
       backgroundColor: theme.background,
@@ -158,6 +191,7 @@ const IdeaSubmissionScreen = ({ navigation }) => {
     scrollContainer: {
       flexGrow: 1,
       padding: 16,
+      paddingBottom: dynamicBottomPadding, // Dynamic padding based on device
     },
     title: {
       fontSize: 28,
@@ -193,6 +227,7 @@ const IdeaSubmissionScreen = ({ navigation }) => {
     },
     submitButton: {
       marginTop: 24,
+      marginBottom: Math.max(dynamicBottomPadding - 40, 20), // Dynamic margin based on device
       borderRadius: 25,
       paddingVertical: 4,
     },
@@ -210,6 +245,7 @@ const IdeaSubmissionScreen = ({ navigation }) => {
       borderRadius: 12,
       padding: 16,
       marginTop: 20,
+      marginBottom: dynamicBottomPadding, // Dynamic margin based on device
       borderLeftWidth: 4,
       borderLeftColor: theme.primary,
     },
@@ -251,10 +287,11 @@ const IdeaSubmissionScreen = ({ navigation }) => {
   });
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -415,6 +452,7 @@ const IdeaSubmissionScreen = ({ navigation }) => {
         onComplete={() => setShowConfetti(false)} 
       />
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 

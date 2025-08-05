@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Startup Idea Evaluator",
-    "slug": "startup-idea-evaluator",
+    "slug": "pgagiassignment",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -29,8 +29,15 @@
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "f9e4cf24-ad81-409c-ab7d-fc4b8d005baf"
       }
+    },
+    "owner": "dheerxj",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f9e4cf24-ad81-409c-ab7d-fc4b8d005baf"
     }
   }
 }

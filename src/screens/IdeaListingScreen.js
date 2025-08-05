@@ -7,7 +7,11 @@ import {
   RefreshControl,
   Alert,
   Animated,
+  SafeAreaView,
+  Dimensions,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FAB, Searchbar, ActivityIndicator, Chip, Menu, Button } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -20,6 +24,29 @@ import SortToggle from '../components/SortToggle';
 
 const IdeaListingScreen = ({ navigation }) => {
   const { theme, isDarkMode, toggleTheme } = useTheme();
+  const insets = useSafeAreaInsets();
+  
+  // Detect if device has hardware navigation buttons
+  const { height: screenHeight } = Dimensions.get('screen');
+  const { height: windowHeight } = Dimensions.get('window');
+  const hasHardwareButtons = screenHeight - windowHeight > 0;
+  
+  // Calculate dynamic bottom positioning for FAB
+  const getFABBottom = () => {
+    if (Platform.OS === 'ios') {
+      return Math.max(insets.bottom + 16, 36);
+    } else {
+      if (hasHardwareButtons) {
+        return Math.max(insets.bottom + 80, 100);
+      } else {
+        return Math.max(insets.bottom + 16, 36);
+      }
+    }
+  };
+  
+  const dynamicFABBottom = getFABBottom();
+  const dynamicListPadding = dynamicFABBottom + 80; // FAB height + extra space
+  
   const [ideas, setIdeas] = useState([]);
   const [filteredIdeas, setFilteredIdeas] = useState([]);
   const [userVotes, setUserVotes] = useState([]);
@@ -241,6 +268,10 @@ const IdeaListingScreen = ({ navigation }) => {
   );
 
   const styles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
     container: {
       flex: 1,
       backgroundColor: theme.background,
@@ -266,12 +297,12 @@ const IdeaListingScreen = ({ navigation }) => {
       color: theme.textSecondary,
     },
     listContainer: {
-      paddingBottom: 100,
+      paddingBottom: dynamicListPadding, // Dynamic padding based on device
     },
     fab: {
       position: 'absolute',
       right: 16,
-      bottom: 16,
+      bottom: dynamicFABBottom, // Dynamic positioning based on device
       backgroundColor: theme.primary,
     },
     filterContainer: {
@@ -334,7 +365,8 @@ const IdeaListingScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
       <View style={styles.searchContainer}>
         <Searchbar
           placeholder="Search ideas..."
@@ -421,6 +453,7 @@ const IdeaListingScreen = ({ navigation }) => {
         label="Add Idea"
       />
     </View>
+    </SafeAreaView>
   );
 };
 
