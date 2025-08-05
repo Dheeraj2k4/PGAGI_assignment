@@ -6,13 +6,16 @@ import {
   StyleSheet,
   RefreshControl,
   Alert,
+  Animated,
 } from 'react-native';
-import { FAB, Searchbar, ActivityIndicator } from 'react-native-paper';
+import { FAB, Searchbar, ActivityIndicator, Chip, Menu, Button } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { storageService } from '../utils/storage';
 import IdeaCard from '../components/IdeaCard';
+import SwipeableIdeaCard from '../components/SwipeableIdeaCard';
 import SortToggle from '../components/SortToggle';
 
 const IdeaListingScreen = ({ navigation }) => {
@@ -25,6 +28,23 @@ const IdeaListingScreen = ({ navigation }) => {
   const [sortBy, setSortBy] = useState('rating');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCards, setExpandedCards] = useState(new Set());
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+
+  const categories = [
+    'All',
+    'HealthTech',
+    'EdTech', 
+    'FinTech',
+    'AI/ML',
+    'E-commerce',
+    'SaaS',
+    'GreenTech',
+    'FoodTech',
+    'PropTech',
+    'Gaming',
+    'Other'
+  ];
 
   // Load data when screen comes into focus
   useFocusEffect(
@@ -46,10 +66,10 @@ const IdeaListingScreen = ({ navigation }) => {
         await storageService.seedSampleData();
         const seededIdeas = await storageService.getIdeas();
         setIdeas(seededIdeas);
-        setFilteredIdeas(seededIdeas);
+        filterAndSortIdeas(seededIdeas, searchQuery, sortBy, selectedCategory);
       } else {
         setIdeas(ideasData);
-        setFilteredIdeas(ideasData);
+        filterAndSortIdeas(ideasData, searchQuery, sortBy, selectedCategory);
       }
 
       setUserVotes(votesData);
@@ -76,35 +96,54 @@ const IdeaListingScreen = ({ navigation }) => {
       const hasVoted = userVotes.includes(ideaId);
       
       if (hasVoted) {
-        Toast.show({
-          type: 'info',
-          text1: 'Already voted',
-          text2: 'You can only vote once per idea',
-        });
-        return;
-      }
+        // Remove vote
+        const success = await storageService.removeVote(ideaId);
+        
+        if (success) {
+          // Update local state
+          const updatedIdeas = ideas.map(idea =>
+            idea.id === ideaId
+              ? { ...idea, votes: Math.max(0, idea.votes - 1), voted: false }
+              : idea
+          );
+          setIdeas(updatedIdeas);
+          filterAndSortIdeas(updatedIdeas, searchQuery, sortBy, selectedCategory);
+          setUserVotes(userVotes.filter(id => id !== ideaId));
 
-      const success = await storageService.addVote(ideaId);
-      
-      if (success) {
-        // Update local state
-        const updatedIdeas = ideas.map(idea =>
-          idea.id === ideaId
-            ? { ...idea, votes: idea.votes + 1, voted: true }
-            : idea
-        );
-        setIdeas(updatedIdeas);
-        filterAndSortIdeas(updatedIdeas, searchQuery, sortBy);
-        setUserVotes([...userVotes, ideaId]);
+          const idea = ideas.find(i => i.id === ideaId);
+          Toast.show({
+            type: 'info',
+            text1: '� Vote removed!',
+            text2: `Removed vote from "${idea?.name}" - Total votes: ${Math.max(0, (idea?.votes || 1) - 1)}`,
+            visibilityTime: 2500,
+          });
+        }
+      } else {
+        // Add vote
+        const success = await storageService.addVote(ideaId);
+        
+        if (success) {
+          // Update local state
+          const updatedIdeas = ideas.map(idea =>
+            idea.id === ideaId
+              ? { ...idea, votes: idea.votes + 1, voted: true }
+              : idea
+          );
+          setIdeas(updatedIdeas);
+          filterAndSortIdeas(updatedIdeas, searchQuery, sortBy, selectedCategory);
+          setUserVotes([...userVotes, ideaId]);
 
-        Toast.show({
-          type: 'success',
-          text1: 'Vote added!',
-          text2: 'Thanks for supporting this idea',
-        });
+          const idea = ideas.find(i => i.id === ideaId);
+          Toast.show({
+            type: 'success',
+            text1: '👍 Voted!',
+            text2: `You voted for "${idea?.name}" - Total votes: ${(idea?.votes || 0) + 1}`,
+            visibilityTime: 2500,
+          });
+        }
       }
     } catch (error) {
-      console.error('Error voting:', error);
+      console.error('Error toggling vote:', error);
       Toast.show({
         type: 'error',
         text1: 'Vote failed',
@@ -115,23 +154,35 @@ const IdeaListingScreen = ({ navigation }) => {
 
   const handleSortChange = (newSortBy) => {
     setSortBy(newSortBy);
-    filterAndSortIdeas(ideas, searchQuery, newSortBy);
+    filterAndSortIdeas(ideas, searchQuery, newSortBy, selectedCategory);
   };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    filterAndSortIdeas(ideas, query, sortBy);
+    filterAndSortIdeas(ideas, query, sortBy, selectedCategory);
   };
 
-  const filterAndSortIdeas = (ideasList, query, sortType) => {
-    let filtered = ideasList;
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    setShowCategoryMenu(false);
+    filterAndSortIdeas(ideas, searchQuery, sortBy, category);
+  };
 
-    // Filter by search query
+  const filterAndSortIdeas = (ideasList, query, sortType, category) => {
+    let filtered = [...ideasList];
+
+    // Filter by category first
+    if (category && category !== 'All') {
+      filtered = filtered.filter(idea => idea.category === category);
+    }
+
+    // Then filter by search query
     if (query.trim()) {
-      filtered = ideasList.filter(idea =>
+      filtered = filtered.filter(idea =>
         idea.name.toLowerCase().includes(query.toLowerCase()) ||
         idea.tagline.toLowerCase().includes(query.toLowerCase()) ||
-        idea.description.toLowerCase().includes(query.toLowerCase())
+        idea.description.toLowerCase().includes(query.toLowerCase()) ||
+        (idea.category && idea.category.toLowerCase().includes(query.toLowerCase()))
       );
     }
 
@@ -157,13 +208,24 @@ const IdeaListingScreen = ({ navigation }) => {
     setExpandedCards(newExpanded);
   };
 
+  const handleReadMore = (idea) => {
+    toggleCardExpansion(idea.id);
+    Toast.show({
+      type: 'info',
+      text1: '📖 Expanding details',
+      text2: `Reading more about ${idea.name}`,
+      visibilityTime: 1500,
+    });
+  };
+
   const renderIdea = ({ item }) => (
-    <IdeaCard
+    <SwipeableIdeaCard
       idea={item}
+      userVotes={userVotes}
       onUpvote={handleUpvote}
-      hasVoted={userVotes.includes(item.id)}
-      expanded={expandedCards.has(item.id)}
-      onToggleExpanded={toggleCardExpansion}
+      onToggleExpansion={toggleCardExpansion}
+      isExpanded={expandedCards.has(item.id)}
+      onReadMore={handleReadMore}
     />
   );
 
@@ -211,6 +273,25 @@ const IdeaListingScreen = ({ navigation }) => {
       right: 16,
       bottom: 16,
       backgroundColor: theme.primary,
+    },
+    filterContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingBottom: 8,
+      gap: 12,
+    },
+    categoryFilterButton: {
+      borderColor: theme.border,
+      borderRadius: 20,
+    },
+    categoryFilterContent: {
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+    },
+    selectedFilterChip: {
+      backgroundColor: theme.primary + '20',
+      borderColor: theme.primary,
     },
     emptyContainer: {
       flex: 1,
@@ -262,6 +343,45 @@ const IdeaListingScreen = ({ navigation }) => {
           style={styles.searchbar}
           iconColor={theme.primary}
         />
+      </View>
+
+      {/* Category Filter */}
+      <View style={styles.filterContainer}>
+        <Menu
+          visible={showCategoryMenu}
+          onDismiss={() => setShowCategoryMenu(false)}
+          anchor={
+            <Button
+              mode="outlined"
+              onPress={() => setShowCategoryMenu(true)}
+              style={styles.categoryFilterButton}
+              contentStyle={styles.categoryFilterContent}
+              icon="filter-variant"
+            >
+              {selectedCategory}
+            </Button>
+          }
+        >
+          {categories.map((category) => (
+            <Menu.Item
+              key={category}
+              title={category}
+              onPress={() => handleCategoryChange(category)}
+              titleStyle={selectedCategory === category ? { color: theme.primary, fontWeight: 'bold' } : {}}
+            />
+          ))}
+        </Menu>
+        
+        {selectedCategory !== 'All' && (
+          <Chip 
+            mode="outlined" 
+            style={styles.selectedFilterChip}
+            textStyle={{ color: theme.primary }}
+            onClose={() => handleCategoryChange('All')}
+          >
+            {selectedCategory}
+          </Chip>
+        )}
       </View>
 
       <SortToggle sortBy={sortBy} onSortChange={handleSortChange} />

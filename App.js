@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -100,10 +101,11 @@ const AppNavigator = () => {
   };
 
   return (
-    <SafeAreaProvider>
-      <PaperProvider theme={paperTheme}>
-        <NavigationContainer theme={navigationTheme}>
-          <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <PaperProvider theme={paperTheme}>
+          <NavigationContainer theme={navigationTheme}>
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} />
           
           <Tab.Navigator
           screenOptions={({ route }) => ({
@@ -185,6 +187,7 @@ const AppNavigator = () => {
       </NavigationContainer>
     </PaperProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 };
 

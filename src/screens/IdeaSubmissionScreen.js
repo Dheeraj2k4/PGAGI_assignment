@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,13 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { TextInput, Button, Card, HelperText } from 'react-native-paper';
+import { TextInput, Button, Card, HelperText, Menu, Chip } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../context/ThemeContext';
 import { storageService } from '../utils/storage';
 import { generateFakeRating, generateFakeFeedback, generateId } from '../utils/generateFakeRating';
 import { shadowPresets } from '../utils/shadowUtils';
+import SimpleConfetti from '../components/SimpleConfetti';
 
 const IdeaSubmissionScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -21,9 +22,26 @@ const IdeaSubmissionScreen = ({ navigation }) => {
     startupName: '',
     tagline: '',
     description: '',
+    category: '',
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+
+  const categories = [
+    'HealthTech',
+    'EdTech', 
+    'FinTech',
+    'AI/ML',
+    'E-commerce',
+    'SaaS',
+    'GreenTech',
+    'FoodTech',
+    'PropTech',
+    'Gaming',
+    'Other'
+  ];
 
   const validateForm = () => {
     const newErrors = {};
@@ -46,21 +64,30 @@ const IdeaSubmissionScreen = ({ navigation }) => {
       newErrors.description = 'Description must be at least 20 characters';
     }
 
+    if (!formData.category) {
+      newErrors.category = 'Please select a category';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
+    console.log('Submit button pressed');
+    
     if (!validateForm()) {
+      console.log('Form validation failed');
       return;
     }
 
+    console.log('Form validation passed, starting submission');
     setIsSubmitting(true);
 
     try {
       // Generate fake AI data
       const rating = generateFakeRating();
       const feedback = generateFakeFeedback();
+      console.log('Generated AI data');
 
       // Create new idea object
       const newIdea = {
@@ -68,6 +95,7 @@ const IdeaSubmissionScreen = ({ navigation }) => {
         name: formData.startupName.trim(),
         tagline: formData.tagline.trim(),
         description: formData.description.trim(),
+        category: formData.category,
         rating,
         votes: 0,
         voted: false,
@@ -75,28 +103,37 @@ const IdeaSubmissionScreen = ({ navigation }) => {
         feedback,
       };
 
+      console.log('Saving idea to storage...');
       // Save to storage
       const success = await storageService.addIdea(newIdea);
 
       if (success) {
-        // Show success toast
+        console.log('Idea saved successfully, showing confetti');
+        
+        // Show success toast first
         Toast.show({
           type: 'success',
-          text1: 'Idea submitted!',
+          text1: '🎉 Idea submitted successfully!',
           text2: `AI Rating: ${rating}/100 - ${feedback}`,
           visibilityTime: 4000,
         });
+
+        // Trigger confetti animation
+        setShowConfetti(true);
 
         // Reset form
         setFormData({
           startupName: '',
           tagline: '',
           description: '',
+          category: '',
         });
         setErrors({});
 
-        // Navigate to idea listing
-        navigation.navigate('IdeaListing');
+        // Navigate to idea listing after a brief delay
+        setTimeout(() => {
+          navigation.navigate('IdeaListing');
+        }, 1500);
       } else {
         throw new Error('Failed to save idea');
       }
@@ -109,6 +146,7 @@ const IdeaSubmissionScreen = ({ navigation }) => {
       });
     } finally {
       setIsSubmitting(false);
+      console.log('Submission process finished');
     }
   };
 
@@ -185,6 +223,30 @@ const IdeaSubmissionScreen = ({ navigation }) => {
       fontSize: 14,
       color: theme.text,
       lineHeight: 20,
+    },
+    categoryLabel: {
+      fontSize: 16,
+      fontWeight: '500',
+      marginBottom: 8,
+    },
+    categoryButton: {
+      borderColor: theme.border,
+      borderRadius: 8,
+      marginBottom: 4,
+    },
+    categoryButtonContent: {
+      paddingVertical: 8,
+      justifyContent: 'flex-start',
+    },
+    categoryButtonLabel: {
+      fontSize: 16,
+      textAlign: 'left',
+    },
+    selectedCategoryChip: {
+      alignSelf: 'flex-start',
+      marginTop: 8,
+      backgroundColor: theme.primary + '20',
+      borderColor: theme.primary,
     },
   });
 
@@ -278,6 +340,51 @@ const IdeaSubmissionScreen = ({ navigation }) => {
             </Text>
           </View>
 
+          <View style={styles.inputContainer}>
+            <Text style={[styles.categoryLabel, { color: theme.text }]}>Category *</Text>
+            <Menu
+              visible={showCategoryMenu}
+              onDismiss={() => setShowCategoryMenu(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  onPress={() => setShowCategoryMenu(true)}
+                  style={[styles.categoryButton, errors.category && { borderColor: theme.error }]}
+                  contentStyle={styles.categoryButtonContent}
+                  labelStyle={[styles.categoryButtonLabel, { color: formData.category ? theme.text : theme.textSecondary }]}
+                >
+                  {formData.category || 'Select a category'}
+                </Button>
+              }
+            >
+              {categories.map((category) => (
+                <Menu.Item
+                  key={category}
+                  title={category}
+                  onPress={() => {
+                    setFormData({ ...formData, category });
+                    setShowCategoryMenu(false);
+                    if (errors.category) {
+                      setErrors({ ...errors, category: '' });
+                    }
+                  }}
+                />
+              ))}
+            </Menu>
+            <HelperText type="error" visible={!!errors.category}>
+              {errors.category}
+            </HelperText>
+            {formData.category && (
+              <Chip 
+                mode="outlined" 
+                style={styles.selectedCategoryChip}
+                textStyle={{ color: theme.primary }}
+              >
+                {formData.category}
+              </Chip>
+            )}
+          </View>
+
           <Button
             mode="contained"
             onPress={handleSubmit}
@@ -301,6 +408,12 @@ const IdeaSubmissionScreen = ({ navigation }) => {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Simple Confetti Animation */}
+      <SimpleConfetti 
+        trigger={showConfetti} 
+        onComplete={() => setShowConfetti(false)} 
+      />
     </KeyboardAvoidingView>
   );
 };

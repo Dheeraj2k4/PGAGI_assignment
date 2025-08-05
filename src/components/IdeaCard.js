@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
-import { Card, Button, Chip, Divider } from 'react-native-paper';
+import { Card, Button, Chip, Divider, IconButton } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { getRatingColor, getDaysSinceSubmission } from '../utils/generateFakeRating';
 import { shadowPresets } from '../utils/shadowUtils';
@@ -98,9 +99,14 @@ const IdeaCard = ({ idea, onUpvote, hasVoted, expanded, onToggleExpanded }) => {
       borderRadius: 20,
       paddingHorizontal: 12,
       paddingVertical: 6,
+      minWidth: 60,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    voteButtonDisabled: {
-      opacity: 0.6,
+    voteContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     voteText: {
       fontSize: 12,
@@ -159,15 +165,22 @@ const IdeaCard = ({ idea, onUpvote, hasVoted, expanded, onToggleExpanded }) => {
               <TouchableOpacity
                 style={[
                   styles.voteButton,
-                  { backgroundColor: hasVoted ? theme.primary : theme.border },
-                  hasVoted && styles.voteButtonDisabled,
+                  { backgroundColor: hasVoted ? theme.primary : theme.surface },
+                  { borderColor: hasVoted ? theme.primary : theme.border },
+                  { borderWidth: hasVoted ? 0 : 1 },
                 ]}
                 onPress={handleUpvote}
-                disabled={hasVoted}
               >
-                <Text style={[styles.voteText, { color: hasVoted ? theme.onPrimary : theme.text }]}>
-                  👍 {idea.votes}
-                </Text>
+                <View style={styles.voteContent}>
+                  <MaterialCommunityIcons 
+                    name={hasVoted ? "thumb-up" : "thumb-up-outline"} 
+                    size={16} 
+                    color={hasVoted ? theme.onPrimary : theme.primary}
+                  />
+                  <Text style={[styles.voteText, { color: hasVoted ? theme.onPrimary : theme.text }]}>
+                    {idea.votes}
+                  </Text>
+                </View>
               </TouchableOpacity>
             </Animated.View>
             <Text style={styles.dateText}>{getDaysSinceSubmission(idea.submittedAt)}</Text>
